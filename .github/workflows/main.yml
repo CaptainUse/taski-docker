@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  # Запустить тестирование приложения
+  # Запустить тестирование backend
   tests:
     runs-on: ubuntu-latest
 
@@ -56,7 +56,7 @@ jobs:
           cd backend/
           python manage.py test
 
-  # Собрать и отправить Docker-образ на Docker Hub
+  # Собрать и отправить backend-образ на Docker Hub
   build_and_push_to_docker_hub:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
@@ -81,3 +81,77 @@ jobs:
           context: ./backend/
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/taski_backend:latest
+
+  # Проверить frontend
+  frontend_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          cd frontend/
+          npm ci
+
+      - name: Test frontend
+        run: |
+          cd frontend/
+          npm run test
+
+  # Собрать и отправить frontend-образ на Docker Hub
+  build_frontend_and_push_to_docker_hub:
+    name: Push frontend Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    needs: frontend_tests
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./frontend/
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/taski_frontend:latest
+
+  # Собрать и отправить gateway-образ на Docker Hub
+  build_gateway_and_push_to_docker_hub:
+    name: Push gateway Docker image to Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./gateway/
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/taski_gateway:latest

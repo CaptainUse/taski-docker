@@ -197,6 +197,12 @@ jobs:
             sudo docker compose -f docker-compose.production.yml down
             sudo docker compose -f docker-compose.production.yml up -d
 
+            # Дождаться готовности PostgreSQL
+            until sudo docker compose -f docker-compose.production.yml exec -T db pg_isready; do
+              echo "Waiting for PostgreSQL..."
+              sleep 2
+            done
+
             # Выполнить миграции Django
             sudo docker compose -f docker-compose.production.yml exec -T backend python manage.py migrate
 
